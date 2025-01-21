@@ -122,18 +122,18 @@ router.get('/', async (req, res) => {
 
 
 // GET ALL Products
-router.get('/', async (req, res) => {
-    try {
-        const products = await Product.find();
-        if (!products) {
-            return res.status(404).json({ message: 'Products not found' });
-        }
-        res.status(200).json(products);
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).json({ error: 'Server error' });
-    }
-});
+// router.get('/', async (req, res) => {
+//     try {
+//         const products = await Product.find();
+//         if (!products) {
+//             return res.status(404).json({ message: 'Products not found' });
+//         }
+//         res.status(200).json(products);
+//     } catch (err) {
+//         console.error(err.message);
+//         res.status(500).json({ error: 'Server error' });
+//     }
+// });
 
 
 
