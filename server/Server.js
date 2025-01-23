@@ -10,8 +10,12 @@ connectDB();
 
 const app = express();
 
+app.use(express.static('uploads'));
+
+
 app.use(cors());
 app.use(express.json());
+
 app.use('/api/auth', require('./Routes/auth'));
 app.use('/api/products', require('./Routes/product'));
 app.use('/api', uploadRoute);

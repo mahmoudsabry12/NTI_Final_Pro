@@ -4,22 +4,29 @@ const Product = require('../Model/product')
 const multer = require('multer'); // لتحميل الملفات
 const fs = require('fs'); // للتعامل مع الملفات
 const cloudinary = require('../config/cloudinary'); // إعداد Cloudinary
+const path = require('path');
+
 
 const upload = multer({ dest: 'uploads/' });
 
+
 router.post('/', upload.single('imgUrl'), async (req, res) => {
-    const { title, description, category, stock, price,imgUrl } = req.body;
+    const { title, description, category, stock, price } = req.body;
 
+    let imgUrl = ''; // رابط الصورة
     try {
-        let imgUrl = '';
-
-        // تحقق من وجود صورة وارفعها إلى Cloudinary
         if (req.file) {
+            // إذا رفع المستخدم صورة، ارفعها إلى Cloudinary
             const result = await cloudinary.uploader.upload(req.file.path);
-            imgUrl = result.secure_url; // احصل على الرابط الآمن للصورة
+            imgUrl = result.secure_url; // رابط الصورة
 
-            // احذف الملف المؤقت
+            // حذف الملف المؤقت من السيرفر
             fs.unlinkSync(req.file.path);
+        } else {
+            // إذا لم يرفع المستخدم صورة، استخدم صورة افتراضية من المسار المحدد
+            const defaultImagePath = path.join(__dirname, '..', 'uploads', 'a.png'); // المسار إلى الصورة الافتراضية
+            const result = await cloudinary.uploader.upload(defaultImagePath);
+            imgUrl = result.secure_url; // رابط الصورة الافتراضية
         }
 
         // إنشاء منتج جديد مع رابط الصورة
@@ -40,6 +47,8 @@ router.post('/', upload.single('imgUrl'), async (req, res) => {
         res.status(500).json({ error: 'Server error' });
     }
 });
+
+
 
 
 // GET ALL Products of Specific Category
@@ -87,15 +96,15 @@ router.get('/', async (req, res) => {
     try {
         // تحديد الصفحة والحد الافتراضي في حالة عدم تقديم قيم
         const page = parseInt(req.query.page) || 1; // الصفحة الافتراضية 1
-        const limit = parseInt(req.query.limit) || 10; // الحد الافتراضي 10 منتجات في الصفحة
+        const limit = parseInt(req.query.limit) || 6; 
 
-        // حساب عدد العناصر التي يجب تخطيها بناءً على الصفحة المحددة
+ 
         const skip = (page - 1) * limit;
 
         // استعلام Mongoose مع pagination
         const products = await Product.find()
-            .skip(skip)      // تخطي المنتجات التي تم عرضها في الصفحات السابقة
-            .limit(limit);   // تحديد عدد المنتجات في الصفحة
+            .skip(skip)     
+            .limit(limit);   
 
         // حساب العدد الإجمالي للمنتجات
         const totalProducts = await Product.countDocuments();
@@ -149,22 +158,17 @@ router.put('/:id', upload.single('imgUrl'), async (req, res) => {
             return res.status(404).json({ message: 'Product not found' });
         }
 
-        // إذا كان هناك صورة جديدة
-        let imgUrl = product.imgUrl; // احتفظ بالصورة القديمة إذا لم يتم رفع صورة جديدة
+        let imgUrl = product.imgUrl; 
         if (req.file) {
-            // حذف الصورة القديمة من Cloudinary
-            const publicId = product.imgUrl.split('/').pop().split('.')[0]; // استخراج public_id
+            const publicId = product.imgUrl.split('/').pop().split('.')[0]; 
             await cloudinary.uploader.destroy(publicId);
 
-            // رفع الصورة الجديدة إلى Cloudinary
             const result = await cloudinary.uploader.upload(req.file.path);
             imgUrl = result.secure_url;
 
-            // حذف الملف المؤقت
             fs.unlinkSync(req.file.path);
         }
 
-        // تحديث المنتج
         const updatedProduct = await Product.findByIdAndUpdate(
             req.params.id,
             {
@@ -189,18 +193,15 @@ router.put('/:id', upload.single('imgUrl'), async (req, res) => {
 // DELETE Product
 router.delete('/:id', async (req, res) => {
     try {
-        // العثور على المنتج باستخدام ID
         const product = await Product.findById(req.params.id);
 
         if (!product) {
             return res.status(404).json({ message: 'Product not found' });
         }
 
-        // حذف الصورة من Cloudinary
         const publicId = product.imgUrl.split('/').pop().split('.')[0]; // استخراج public_id من الرابط
         await cloudinary.uploader.destroy(publicId);
 
-        // حذف المنتج من قاعدة البيانات
         await Product.findByIdAndDelete(req.params.id);
 
         res.status(200).json({ message: 'Product deleted successfully!' });
