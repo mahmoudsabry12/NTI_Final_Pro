@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  backend:
+    image: nti-pro_backend:latest
+    container_name: nti-pro-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - MONGO_URI=${MONGO_URI}
+      - PORT=5000
+    networks:
+      - nti-pro-network
+
+  frontend:
+    image: nti-pro_frontend:latest
+    container_name: nti-pro-frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - backend
+    networks:
+      - nti-pro-network
+
+networks:
+  nti-pro-network:
+    driver: bridge
+
+

@@ -1,7 +1,7 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
-const uploadRoute = require('./Routes/upload'); // المسار الخاص برفع الصور
+const uploadRoute = require('./Routes/upload');
 const cors = require('cors');
 
 
