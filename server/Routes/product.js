@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const Product = require('../Model/product')
-const multer = require('multer'); // لتحميل الملفات
-const fs = require('fs'); // للتعامل مع الملفات
-const cloudinary = require('../config/cloudinary'); // إعداد Cloudinary
+const multer = require('multer');
+const fs = require('fs');
+const cloudinary = require('../config/cloudinary');
 const path = require('path');
 
 
@@ -13,23 +13,21 @@ const upload = multer({ dest: 'uploads/' });
 router.post('/', upload.single('imgUrl'), async (req, res) => {
     const { title, description, category, stock, price } = req.body;
 
-    let imgUrl = ''; // رابط الصورة
+    let imgUrl = '';
     try {
         if (req.file) {
-            // إذا رفع المستخدم صورة، ارفعها إلى Cloudinary
             const result = await cloudinary.uploader.upload(req.file.path);
-            imgUrl = result.secure_url; // رابط الصورة
+            imgUrl = result.secure_url;
 
-            // حذف الملف المؤقت من السيرفر
+
             fs.unlinkSync(req.file.path);
         } else {
-            // إذا لم يرفع المستخدم صورة، استخدم صورة افتراضية من المسار المحدد
-            const defaultImagePath = path.join(__dirname, '..', 'uploads', 'a.png'); // المسار إلى الصورة الافتراضية
+            const defaultImagePath = path.join(__dirname, '..', 'uploads', 'a.png');
             const result = await cloudinary.uploader.upload(defaultImagePath);
-            imgUrl = result.secure_url; // رابط الصورة الافتراضية
+            imgUrl = result.secure_url;
         }
 
-        // إنشاء منتج جديد مع رابط الصورة
+
         const newProduct = new Product({ 
             title, 
             description, 
@@ -68,14 +66,10 @@ router.get('/:category', async (req, res) => {
 });
 
 // GET Product by ID
-// GET المنتج باستخدام الـ ID
-
-// GET Product by ID
 router.get('/product/:id', async (req, res) => {
     const { id } = req.params;
 
     try {
-        // البحث عن المنتج باستخدام ID
         const product = await Product.findById(id);
         if (!product) {
             return res.status(404).json({ message: 'Product not found' });
@@ -94,29 +88,24 @@ router.get('/product/:id', async (req, res) => {
 // GET ALL Products with Pagination
 router.get('/', async (req, res) => {
     try {
-        // تحديد الصفحة والحد الافتراضي في حالة عدم تقديم قيم
-        const page = parseInt(req.query.page) || 1; // الصفحة الافتراضية 1
+        const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 6; 
 
  
         const skip = (page - 1) * limit;
 
-        // استعلام Mongoose مع pagination
         const products = await Product.find()
-            .skip(skip)     
-            .limit(limit);   
+            .skip(skip)
+            .limit(limit);
 
-        // حساب العدد الإجمالي للمنتجات
         const totalProducts = await Product.countDocuments();
-
-        // حساب عدد الصفحات بناءً على العدد الإجمالي للمنتجات
         const totalPages = Math.ceil(totalProducts / limit);
 
         res.status(200).json({
-            products,          // المنتجات في الصفحة الحالية
-            currentPage: page, // الصفحة الحالية
-            totalPages,        // إجمالي الصفحات
-            totalProducts,     // إجمالي المنتجات
+            products,
+            currentPage: page,
+            totalPages,
+            totalProducts,
         });
     } catch (err) {
         console.error(err.message);
@@ -199,7 +188,7 @@ router.delete('/:id', async (req, res) => {
             return res.status(404).json({ message: 'Product not found' });
         }
 
-        const publicId = product.imgUrl.split('/').pop().split('.')[0]; // استخراج public_id من الرابط
+        const publicId = product.imgUrl.split('/').pop().split('.')[0];
         await cloudinary.uploader.destroy(publicId);
 
         await Product.findByIdAndDelete(req.params.id);
