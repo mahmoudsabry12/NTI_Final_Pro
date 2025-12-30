@@ -1,4 +1,5 @@
-const Product = require('../../Model/Product');
+const Product = require('./product.model');
+
 
 class ProductRepository {
 
