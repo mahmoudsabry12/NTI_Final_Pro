@@ -2,20 +2,20 @@ const Product = require('../../Model/Product');
 
 class ProductRepository {
 
-    async createProct(productData){
+    async create(productData){
         const product = new Product(productData)
         return await product.save()
     }
 
 
-    async findProductbyId(id){
+    async findById(id){
         return await Product.findById(id)
     }
-    async findAllProduct(skip, limit){
+    async findAll(skip, limit){
         return await Product.find().skip(skip).limit(limit)
     }
      
-    async findAllProductbyCategory(category){
+    async findByCategory(category){
         return await Product.find({category})
     }
 
@@ -23,12 +23,12 @@ class ProductRepository {
         return await Product.countDocuments();
     }
 
-    async updateProduct(id,updateData){
+    async updateById(id,updateData){
         return await Product.findByIdAndUpdate(id, updateData,{new: true})
     }
 
 
-    async deleteProductbyId(id){
+    async deleteById(id){
         return await Product.findByIdAndDelete(id)
     }
 }
