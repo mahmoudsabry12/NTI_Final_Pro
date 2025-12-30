@@ -62,7 +62,7 @@ class ProductController {
   async getAllProducts(req, res) {
     try {
       const page = parseInt(req.query.page) || 1;
-      const limit = parseInt(req.query.limit) || 6;
+      const limit = parseInt(req.query.limit) || 10;
 
       const result = await productService.getAllProducts(page, limit);
       res.status(200).json(result);

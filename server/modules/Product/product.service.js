@@ -49,7 +49,7 @@ class ProductService {
     return products;
   }
 
-  async getAllProducts(page = 1, limit = 6) {
+  async getAllProducts(page = 1, limit = 10) {
     const skip = (page - 1) * limit;
     const products = await productRepository.findAll(skip, limit);
     const totalProducts = await productRepository.countAll();
