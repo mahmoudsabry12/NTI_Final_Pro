@@ -2,8 +2,11 @@ const fs = require('fs');
 const path = require('path');
 const cloudinary = require('../../config/cloudinary');
 const productRepository = require('./product.repository');
+const redisClient = require('../../config/redis');
+const { invalidateProductsCache } = require('../../utils/cache.helper');
 
 class ProductService {
+
   async uploadImage(filePath, defaultImagePath = null) {
     try {
       if (filePath) {
@@ -30,7 +33,13 @@ class ProductService {
   }
 
   async createProduct(productData) {
-    return await productRepository.create(productData);
+
+    const product = await productRepository.create(productData);
+
+    // Invalidate related Redis cache
+    await invalidateProductsCache();
+
+    return product
   }
 
   async getProductById(id) {
@@ -50,21 +59,43 @@ class ProductService {
   }
 
   async getAllProducts(page = 1, limit = 10) {
+    
+     const cacheKey = `products:page=${page}:limit=${limit}`;
+
+    // check Redis cache
+    const cached = await redisClient.get(cacheKey);
+    if (cached) {
+      return {
+      source: 'redis',
+      data: JSON.parse(cached),
+    };
+    } 
+
     const skip = (page - 1) * limit;
     const products = await productRepository.findAll(skip, limit);
     const totalProducts = await productRepository.countAll();
     const totalPages = Math.ceil(totalProducts / limit);
 
-    return {
+   const result = {
       products,
       currentPage: page,
       totalPages,
       totalProducts,
     };
+
+    // store data in Redis cache for 10 seconds
+    await redisClient.setEx(cacheKey, 10, JSON.stringify(result));
+
+    return {
+      source:'db',
+      data:result
+    };
   }
 
   async updateProduct(id, productData) {
-    return await productRepository.updateById(id, productData);
+    const updatedProduct = await productRepository.updateById(id, productData)
+    await invalidateProductsCache();
+    return updatedProduct;
   }
 
   async deleteProduct(id) {
@@ -73,7 +104,10 @@ class ProductService {
       throw new Error('Product not found');
     }
     await this.deleteImage(product.imgUrl);
-    return await productRepository.deleteById(id);
+    const deletedProduct = await productRepository.deleteById(id);
+
+    await invalidateProductsCache();
+    return deletedProduct;
   }
 }
 
