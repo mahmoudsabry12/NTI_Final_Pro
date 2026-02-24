@@ -1,10 +1,13 @@
 const productService = require('./product.service');
 const path = require('path');
+const logger = require('../../config/logger');
+
 
 class ProductController {
   async createProduct(req, res) {
     const { title, description, category, stock, price } = req.body;
     try {
+      logger.info(`Creating product: ${title} in category: ${category}`);
       const defaultImagePath = path.join(__dirname, '../../uploads', 'a.png');
       const imgUrl = await productService.uploadImage(
         req.file?.path,
@@ -21,12 +24,14 @@ class ProductController {
       };
 
       const product = await productService.createProduct(productData);
+      logger.info(`Product created successfully: ${product.id}`);
+
       res.status(201).json({
         message: 'Product added successfully!',
         product,
       });
     } catch (err) {
-      console.error(err.message);
+      logger.error(`Create product error: ${err.message}`);
       res.status(500).json({ error: 'Server error', details: err.message });
     }
   }
@@ -34,10 +39,11 @@ class ProductController {
   async getProductsByCategory(req, res) {
     const { category } = req.params;
     try {
+      logger.info(`Get products in Category: ${category}`);
       const products = await productService.getProductsByCategory(category);
       res.status(200).json(products);
     } catch (err) {
-      console.error(err.message);
+      logger.error(`Get product category : ${err.message}`);
       if (err.message === 'Products not found') {
         return res.status(404).json({ message: 'Products not found' });
       }
@@ -48,9 +54,11 @@ class ProductController {
   async getProductById(req, res) {
     const { id } = req.params;
     try {
+      logger.info(`Get product With Id : ${id} `);
       const product = await productService.getProductById(id);
       res.status(200).json(product);
     } catch (err) {
+      logger.error(`Get product With Id : ${err.message}`);
       console.error(err.message);
       if (err.message === 'Product not found') {
         return res.status(404).json({ message: 'Product not found' });
@@ -63,11 +71,11 @@ class ProductController {
     try {
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 10;
-
       const result = await productService.getAllProducts(page, limit);
+      logger.info(`Get products of page : '${page}'`);
       res.status(200).json(result);
     } catch (err) {
-      console.error(err.message);
+      logger.error(`Get products error: ${err.message}`);
       res.status(500).json({ error: 'Server error' });
     }
   }
@@ -75,6 +83,8 @@ class ProductController {
   async updateProduct(req, res) {
     const { title, description, category, stock, price } = req.body;
     try {
+      logger.info(`Updating product with Id : ${req.params.id} `);
+
       const product = await productService.getProductById(req.params.id);
 
       let imgUrl = product.imgUrl;
@@ -98,6 +108,7 @@ class ProductController {
       );
       res.status(200).json(updatedProduct);
     } catch (err) {
+      logger.error(`Updating product error: ${err.message}`);
       console.error(err.message);
       if (err.message === 'Product not found') {
         return res.status(404).json({ message: 'Product not found' });
@@ -108,9 +119,11 @@ class ProductController {
 
   async deleteProduct(req, res) {
     try {
+      logger.info(`Deleting product with Id : ${req.params.id} `);
       await productService.deleteProduct(req.params.id);
       res.status(200).json({ message: 'Product deleted successfully!' });
     } catch (err) {
+      logger.error(`Deleting product error: ${err.message}`);
       console.error(err.message);
       if (err.message === 'Product not found') {
         return res.status(404).json({ message: 'Product not found' });
